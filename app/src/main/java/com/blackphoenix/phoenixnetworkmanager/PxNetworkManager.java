@@ -135,6 +135,7 @@ public class PxNetworkManager {
             mTelephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
         // ToDo : Handle the else Part Here
 
+
         this.signalStrengthListener = listener;
     }
 
