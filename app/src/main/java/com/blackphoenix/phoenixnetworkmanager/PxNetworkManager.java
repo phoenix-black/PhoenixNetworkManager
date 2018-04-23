@@ -59,7 +59,7 @@ public class PxNetworkManager {
     private TelephonyManager mTelephonyManager;
     private int signalStrength;
     private PhoneStateListener phoneStateListener;
-
+    private SignalStrengthListener signalStrengthListener;
 
     private static int SIGNAL_STRENGTH_GOOD = 3;
     private static int SIGNAL_STRENGTH_GREAT = 4;
@@ -67,35 +67,75 @@ public class PxNetworkManager {
     private static int SIGNAL_STRENGTH_NONE_OR_UNKNOWN = 0;
     private static int SIGNAL_STRENGTH_POOR = 1;
 
+    public interface SignalStrengthListener {
+        void onSignalStrengthChanged(int signalStrength, List<PxSignalStrength> signalLevelList);
+    }
 
-    public PxNetworkManager(@NonNull Context context) {
+
+    public PxNetworkManager(@NonNull final Context context) {
         this.context = context;
         mTelephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         phoneStateListener = new PhoneStateListener() {
             @Override
             public void onSignalStrengthsChanged(SignalStrength signalStrength) {
                 super.onSignalStrengthsChanged(signalStrength);
+                List<PxSignalStrength> signalStrengthList = null;
+
+                try {
+                    signalStrengthList = getSignalStrengthLevel(context);
+                } catch (PxNetworkException e){
+
+                }
 
                 if (signalStrength.getGsmSignalStrength() == 0 || signalStrength.getGsmSignalStrength() == 99) {
                     PxNetworkManager.this.signalStrength = SIGNAL_STRENGTH_NONE_OR_UNKNOWN;
+                    if (signalStrengthListener != null) {
+                        signalStrengthListener.onSignalStrengthChanged(SIGNAL_STRENGTH_NONE_OR_UNKNOWN, signalStrengthList);
+                    }
                 } else if (signalStrength.getGsmSignalStrength() > 12) {
                     PxNetworkManager.this.signalStrength = SIGNAL_STRENGTH_GREAT;
+                    if (signalStrengthListener != null) {
+                        signalStrengthListener.onSignalStrengthChanged(SIGNAL_STRENGTH_GREAT,signalStrengthList);
+                    }
                 } else if (signalStrength.getGsmSignalStrength() > 8) {
                     PxNetworkManager.this.signalStrength = SIGNAL_STRENGTH_GOOD;
+                    if (signalStrengthListener != null) {
+                        signalStrengthListener.onSignalStrengthChanged(SIGNAL_STRENGTH_GOOD,signalStrengthList);
+                    }
                 } else if (signalStrength.getGsmSignalStrength() >= 5) {
                     PxNetworkManager.this.signalStrength = SIGNAL_STRENGTH_MODERATE;
+                    if (signalStrengthListener != null) {
+                        signalStrengthListener.onSignalStrengthChanged(SIGNAL_STRENGTH_MODERATE,signalStrengthList);
+                    }
                 } else if (signalStrength.getGsmSignalStrength() < 5) {
                     PxNetworkManager.this.signalStrength = SIGNAL_STRENGTH_POOR;
+                    if (signalStrengthListener != null) {
+                        signalStrengthListener.onSignalStrengthChanged(SIGNAL_STRENGTH_POOR,signalStrengthList);
+                    }
                 }
             }
         };
 
     }
 
+    /*
+        till of V1.0
+     */
     public void registerSignalStrengthListener() {
         if (mTelephonyManager != null)
             mTelephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
         // ToDo : Handle the else Part Here
+    }
+
+    /*
+        Above V1.0
+     */
+    public void registerSignalStrengthListener(SignalStrengthListener listener) {
+        if (mTelephonyManager != null)
+            mTelephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+        // ToDo : Handle the else Part Here
+
+        this.signalStrengthListener = listener;
     }
 
     public void unRegisterSignalStrengthListener() {
@@ -370,7 +410,7 @@ public class PxNetworkManager {
     }
 
     public static List<PxSignalStrength> getSignalStrengthLevel(@NonNull Context context) throws PxNetworkException {
-        return getSignalStrengthDbm(context,false);
+        return getSignalStrengthLevel(context,false);
      }
 
     public static List<PxSignalStrength> getSignalStrengthLevel(@NonNull Context context, boolean isDebug) throws PxNetworkException {
